@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Beyond the Period | Global Menstrual Health</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Plotly for interactive maps and charts -->
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+    <!-- Papa Parse for reading CSV files -->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
+
+    <!-- Our JavaScript -->
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container">
+            <h1>Beyond the Period</h1>
+            <p>Mapping Global Menstrual Health Inequality</p>
+        </div>
+    </header>
+
+    <!-- INTRODUCTION -->
+    <section class="introduction container">
+        <h2>Explore Menstrual Health Around the World</h2>
+
+        <p>
+            Menstrual health is an important part of health,
+            education, and everyday life. However, access to
+            menstrual products, private spaces, and appropriate
+            sanitation facilities varies around the world.
+        </p>
+
+        <p>
+            Explore country-level data to better understand
+            menstrual health inequalities and the challenges
+            people face in different regions.
+        </p>
+    </section>
+
+    <!-- DASHBOARD -->
+    <main class="dashboard container">
+
+        <h2>Global Menstrual Health Dashboard</h2>
+
+        <!-- FILTERS -->
+        <section class="filters">
+
+            <div class="filter-group">
+                <label for="country-select">Select a Country</label>
+
+                <select id="country-select">
+                    <option value="">Choose a country</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="indicator-select">Select an Indicator</label>
+
+                <select id="indicator-select">
+                    <option value="materials_total">
+                        Menstrual Material Use
+                    </option>
+
+                    <option value="private_total">
+                        Access to a Private Place
+                    </option>
+
+                    <option value="participation_total">
+                        Participation in Daily Activities
+                    </option>
+                </select>
+            </div>
+
+        </section>
+
+        <!-- WORLD MAP -->
+        <section class="map-section">
+
+            <h3>Interactive World Map</h3>
+
+            <p>
+                Select an indicator to explore differences
+                across countries. Click a country on the map
+                to view more information.
+            </p>
+
+            <div id="world-map"></div>
+
+        </section>
+
+        <!-- COUNTRY STATISTICS -->
+        <section class="country-section">
+
+            <h3 id="selected-country-name">
+                Select a country to explore its data
+            </h3>
+
+            <p id="data-year"></p>
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+                    <h4>Menstrual Material Use</h4>
+                    <p class="stat-value" id="materials-value">--</p>
+                    <p class="stat-description">
+                        Percentage reporting use of menstrual materials
+                    </p>
+                </div>
+
+                <div class="stat-card">
+                    <h4>Private Place to Change</h4>
+                    <p class="stat-value" id="private-value">--</p>
+                    <p class="stat-description">
+                        Percentage with access to a private place
+                        to change menstrual materials
+                    </p>
+                </div>
+
+                <div class="stat-card">
+                    <h4>Participation in Activities</h4>
+                    <p class="stat-value" id="participation-value">--</p>
+                    <p class="stat-description">
+                        Percentage reporting participation in
+                        activities during menstruation
+                    </p>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ABOUT THE DATA -->
+        <section class="about-data">
+
+            <h3>About the Data</h3>
+
+            <p>
+                This dashboard uses menstrual health indicators
+                published by the UNICEF/WHO Joint Monitoring
+                Programme (JMP).
+            </p>
+
+            <p>
+                Data availability and reporting years vary
+                between countries. Missing values indicate
+                that an estimate is unavailable, not that
+                the percentage is zero.
+            </p>
+
+            <p>
+                Source:
+                <a
+                    href="https://data.unicef.org/resources/jmp-report-2025/"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    UNICEF/WHO JMP 2025
+                </a>
+            </p>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p>
+            Beyond the Period |
+            A Student Data Visualization Project
+        </p>
+    </footer>
+
+</body>
+</html>
