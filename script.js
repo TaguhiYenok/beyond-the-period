@@ -6,7 +6,7 @@
 
 // Exact filename of your uploaded CSV
 const DATA_FILE =
-    "data/beyond_the_period_unicef_menstrual_health_starter(1).csv";
+    "data/beyond_the_period_unicef_menstrual_health_starter.csv";
 
 // Main dashboard data
 let menstrualData = [];
