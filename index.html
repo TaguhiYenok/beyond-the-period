@@ -3,26 +3,35 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+          content="Explore global menstrual health data,
+          access to menstrual materials, privacy,
+          and participation across countries.">
 
     <title>Beyond the Period | Global Menstrual Health</title>
 
-    <!-- CSS -->
+    <!-- Website styling -->
     <link rel="stylesheet" href="style.css">
 
-    <!-- Plotly for interactive maps and charts -->
+    <!-- Plotly: Interactive maps and charts -->
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
-    <!-- Papa Parse for reading CSV files -->
+    <!-- Papa Parse: CSV data processing -->
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.3/papaparse.min.js"></script>
 
-    <!-- Our JavaScript -->
+    <!-- Dashboard JavaScript -->
     <script src="script.js" defer></script>
 </head>
 
 <body>
 
-    <!-- HEADER -->
+    <!-- =====================================
+         HEADER
+    ====================================== -->
+
     <header class="header">
         <div class="container">
             <h1>Beyond the Period</h1>
@@ -30,15 +39,19 @@
         </div>
     </header>
 
-    <!-- INTRODUCTION -->
+    <!-- =====================================
+         INTRODUCTION
+    ====================================== -->
+
     <section class="introduction container">
         <h2>Explore Menstrual Health Around the World</h2>
 
         <p>
             Menstrual health is an important part of health,
-            education, and everyday life. However, access to
-            menstrual products, private spaces, and appropriate
-            sanitation facilities varies around the world.
+            education, and everyday life. However, access
+            to menstrual products, private spaces, and
+            appropriate sanitation facilities varies
+            around the world.
         </p>
 
         <p>
@@ -48,26 +61,44 @@
         </p>
     </section>
 
-    <!-- DASHBOARD -->
+    <!-- =====================================
+         MAIN DASHBOARD
+    ====================================== -->
+
     <main class="dashboard container">
 
         <h2>Global Menstrual Health Dashboard</h2>
 
-        <!-- FILTERS -->
-        <section class="filters">
+        <!-- =================================
+             FILTERS
+        ================================== -->
+
+        <section class="filters"
+                 aria-label="Dashboard filters">
+
+            <!-- COUNTRY SELECTOR -->
 
             <div class="filter-group">
-                <label for="country-select">Select a Country</label>
+                <label for="country-select">
+                    Select a Country
+                </label>
 
                 <select id="country-select">
-                    <option value="">Choose a country</option>
+                    <option value="">
+                        Choose a country
+                    </option>
                 </select>
             </div>
 
+            <!-- INDICATOR SELECTOR -->
+
             <div class="filter-group">
-                <label for="indicator-select">Select an Indicator</label>
+                <label for="indicator-select">
+                    Select an Indicator
+                </label>
 
                 <select id="indicator-select">
+
                     <option value="materials_total">
                         Menstrual Material Use
                     </option>
@@ -79,83 +110,174 @@
                     <option value="participation_total">
                         Participation in Daily Activities
                     </option>
+
+                </select>
+            </div>
+
+            <!-- YEAR SELECTOR -->
+
+            <div class="filter-group">
+                <label for="year-select">
+                    Select a Year
+                </label>
+
+                <select id="year-select">
+                    <option value="">
+                        Loading years...
+                    </option>
                 </select>
             </div>
 
         </section>
 
-        <!-- WORLD MAP -->
+        <!-- =================================
+             WORLD MAP
+        ================================== -->
+
         <section class="map-section">
 
             <h3>Interactive World Map</h3>
 
             <p>
-                Select an indicator to explore differences
-                across countries. Click a country on the map
-                to view more information.
+                Choose an indicator and year to explore
+                menstrual health estimates across countries.
+                Click a colored country on the map to view
+                its statistics.
             </p>
 
-            <div id="world-map"></div>
+            <!-- YEAR AND COVERAGE INFORMATION -->
+
+            <p id="map-year-label" aria-live="polite">
+                Loading reporting year...
+            </p>
+
+            <p id="map-coverage" aria-live="polite">
+                Loading data coverage...
+            </p>
+
+            <!-- PLOTLY MAP -->
+
+            <div id="world-map"
+                 role="region"
+                 aria-label="Interactive world map of menstrual health indicators">
+            </div>
+
+            <p class="map-note">
+                Countries without available data for the
+                selected indicator and year appear gray.
+                All displayed values use the selected
+                JMP estimate year.
+            </p>
 
         </section>
 
-        <!-- COUNTRY STATISTICS -->
+        <!-- =================================
+             COUNTRY STATISTICS
+        ================================== -->
+
         <section class="country-section">
 
             <h3 id="selected-country-name">
                 Select a country to explore its data
             </h3>
 
-            <p id="data-year"></p>
+            <p id="data-year" aria-live="polite"></p>
 
             <div class="stats-grid">
 
+                <!-- MATERIAL USE -->
+
                 <div class="stat-card">
+
                     <h4>Menstrual Material Use</h4>
-                    <p class="stat-value" id="materials-value">--</p>
-                    <p class="stat-description">
-                        Percentage reporting use of menstrual materials
+
+                    <p class="stat-value"
+                       id="materials-value">
+                        --
                     </p>
+
+                    <p class="stat-description">
+                        Percentage reporting use of
+                        menstrual materials.
+                    </p>
+
                 </div>
 
+                <!-- PRIVACY -->
+
                 <div class="stat-card">
+
                     <h4>Private Place to Change</h4>
-                    <p class="stat-value" id="private-value">--</p>
-                    <p class="stat-description">
-                        Percentage with access to a private place
-                        to change menstrual materials
+
+                    <p class="stat-value"
+                       id="private-value">
+                        --
                     </p>
+
+                    <p class="stat-description">
+                        Percentage with a private place
+                        to wash and change menstrual
+                        materials.
+                    </p>
+
                 </div>
 
+                <!-- PARTICIPATION -->
+
                 <div class="stat-card">
+
                     <h4>Participation in Activities</h4>
-                    <p class="stat-value" id="participation-value">--</p>
-                    <p class="stat-description">
-                        Percentage reporting participation in
-                        activities during menstruation
+
+                    <p class="stat-value"
+                       id="participation-value">
+                        --
                     </p>
+
+                    <p class="stat-description">
+                        Percentage reporting participation
+                        in activities during menstruation.
+                    </p>
+
                 </div>
 
             </div>
 
         </section>
 
-        <!-- ABOUT THE DATA -->
+        <!-- =================================
+             ABOUT THE DATA
+        ================================== -->
+
         <section class="about-data">
 
             <h3>About the Data</h3>
 
             <p>
-                This dashboard uses menstrual health indicators
-                published by the UNICEF/WHO Joint Monitoring
-                Programme (JMP).
+                This dashboard uses country-level menstrual
+                health indicators from the UNICEF/WHO
+                Joint Monitoring Programme (JMP).
             </p>
 
             <p>
-                Data availability and reporting years vary
-                between countries. Missing values indicate
-                that an estimate is unavailable, not that
-                the percentage is zero.
+                The year selector allows users to explore
+                available estimates for a particular
+                calendar year. Countries without available
+                estimates for that year are not assigned
+                values from another year.
+            </p>
+
+            <p>
+                <strong>Important:</strong>
+                JMP estimate years do not necessarily
+                correspond to the years in which the
+                underlying surveys were conducted.
+                Data availability also varies across
+                countries and indicators.
+            </p>
+
+            <p>
+                Missing data does not mean that access
+                is zero.
             </p>
 
             <p>
@@ -172,7 +294,10 @@
 
     </main>
 
-    <!-- FOOTER -->
+    <!-- =====================================
+         FOOTER
+    ====================================== -->
+
     <footer class="footer">
         <p>
             Beyond the Period |
