@@ -4,43 +4,58 @@
    Global Menstrual Health Dashboard
    ========================================== */
 
-// Exact filename of your uploaded CSV
-const DATA_FILE =
-    "data/beyond_the_period_unicef_menstrual_health_starter.csv";
+// ==========================================
+// 1. CONFIGURATION
+// ==========================================
 
-// Main dashboard data
+// All-years UNICEF dataset
+const DATA_FILE =
+    "data/beyond_the_period_unicef_menstrual_health_all_years.csv";
+
+// Dashboard state
 let menstrualData = [];
 let selectedCountry = "";
+let selectedYear = null;
 
-// Available indicators
+// Supported indicators
 const indicators = {
     materials_total: {
         label: "Menstrual Material Use",
-        description: "Percentage reporting use of menstrual materials"
+        description:
+            "Percentage reporting menstrual material use"
     },
 
     private_total: {
         label: "Access to a Private Place",
-        description: "Percentage with a private place to change"
+        description:
+            "Percentage with a private place to wash and change"
     },
 
     participation_total: {
         label: "Participation in Daily Activities",
-        description: "Percentage participating in activities during menstruation"
+        description:
+            "Percentage reporting participation during menstruation"
     }
 };
 
+
 // ==========================================
-// 1. LOAD DATA
+// 2. INITIALIZE APPLICATION
 // ==========================================
 
 document.addEventListener("DOMContentLoaded", () => {
     loadData();
 });
 
+
+// ==========================================
+// 3. LOAD UNICEF DATA
+// ==========================================
+
 function loadData() {
 
     Papa.parse(DATA_FILE, {
+
         download: true,
         header: true,
         skipEmptyLines: true,
@@ -48,45 +63,132 @@ function loadData() {
         complete: function(results) {
 
             if (results.errors.length > 0) {
-                console.warn("CSV parsing warnings:", results.errors);
+                console.warn(
+                    "CSV parsing warnings:",
+                    results.errors
+                );
             }
 
+            // Clean and validate each record
             menstrualData = results.data
-                .filter(row => row.country && row.iso3)
-                .map(row => ({
-                    ...row,
-                    country: row.country.trim(),
-                    iso3: row.iso3.trim().toUpperCase(),
-                    year: row.year
-                }));
+                .filter(row => {
+
+                    return (
+                        row.country &&
+                        row.iso3 &&
+                        String(row.year).trim() !== "" &&
+                        Number.isFinite(Number(row.year))
+                    );
+
+                })
+                .map(row => {
+
+                    return {
+                        ...row,
+
+                        country: row.country.trim(),
+
+                        iso3: row.iso3
+                            .trim()
+                            .toUpperCase(),
+
+                        year: Number(row.year)
+                    };
+
+                });
 
             if (menstrualData.length === 0) {
-                showError("No valid country data was found.");
+
+                showError(
+                    "No valid country data was found."
+                );
+
                 return;
             }
 
             console.log(
                 "Successfully loaded",
                 menstrualData.length,
-                "country records"
+                "UNICEF records"
             );
 
+            // Initialize filters
+            populateYearDropdown();
             populateCountryDropdown();
+
+            // Initialize interactions
             initializeDashboard();
         },
 
         error: function(error) {
-            console.error("Error loading CSV:", error);
+
+            console.error(
+                "Error loading UNICEF CSV:",
+                error
+            );
 
             showError(
-                "Unable to load the dataset. Check the CSV filename and path."
+                "Unable to load the dataset. " +
+                "Check the CSV filename and GitHub path."
             );
         }
     });
 }
 
+
 // ==========================================
-// 2. POPULATE COUNTRY DROPDOWN
+// 4. YEAR SELECTOR
+// ==========================================
+
+function populateYearDropdown() {
+
+    const yearSelect =
+        document.getElementById("year-select");
+
+    // Get unique available years
+    const years = [
+        ...new Set(
+            menstrualData.map(row => row.year)
+        )
+    ].sort((a, b) => b - a);
+
+    yearSelect.innerHTML = "";
+
+    // Populate the dropdown
+    years.forEach(year => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = String(year);
+        option.textContent = String(year);
+
+        yearSelect.appendChild(option);
+    });
+
+    // Default to latest year
+    selectedYear = years[0];
+
+    yearSelect.value = String(selectedYear);
+
+    // Handle year changes
+    yearSelect.addEventListener("change", event => {
+
+        selectedYear = Number(event.target.value);
+
+        console.log(
+            "Selected year:",
+            selectedYear
+        );
+
+        updateMap();
+        updateSelectedCountry();
+    });
+}
+
+
+// ==========================================
+// 5. COUNTRY SELECTOR
 // ==========================================
 
 function populateCountryDropdown() {
@@ -94,28 +196,49 @@ function populateCountryDropdown() {
     const countrySelect =
         document.getElementById("country-select");
 
-    // Alphabetical order
-    const sortedCountries = [...menstrualData].sort(
-        (a, b) => a.country.localeCompare(b.country)
-    );
+    // Use ISO3 codes to identify unique countries
+    const countryMap = new Map();
 
-    sortedCountries.forEach(country => {
+    menstrualData.forEach(row => {
 
-        const option = document.createElement("option");
+        countryMap.set(
+            row.iso3,
+            row.country
+        );
+    });
 
-        option.value = country.iso3;
-        option.textContent = country.country;
+    // Sort countries alphabetically
+    const countries = [
+        ...countryMap.entries()
+    ].sort((a, b) => {
+
+        return a[1].localeCompare(b[1]);
+    });
+
+    countrySelect.innerHTML =
+        '<option value="">Choose a country</option>';
+
+    countries.forEach(([iso3, name]) => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = iso3;
+        option.textContent = name;
 
         countrySelect.appendChild(option);
     });
 
+    // Handle dropdown selection
     countrySelect.addEventListener("change", event => {
+
         selectCountry(event.target.value);
     });
 }
 
+
 // ==========================================
-// 3. INITIALIZE DASHBOARD
+// 6. INITIALIZE DASHBOARD EVENTS
 // ==========================================
 
 function initializeDashboard() {
@@ -123,25 +246,23 @@ function initializeDashboard() {
     const indicatorSelect =
         document.getElementById("indicator-select");
 
-    // Draw initial map
-    updateMap();
-
-    // Update map when indicator changes
     indicatorSelect.addEventListener("change", () => {
+
         updateMap();
     });
 
-    // Show instructions until a country is selected
-    document.getElementById("selected-country-name")
-        .textContent = "Select a country to explore its data";
+    clearCountryStats();
+
+    updateMap();
 }
 
+
 // ==========================================
-// 4. HELPER FUNCTIONS
+// 7. DATA HELPER FUNCTIONS
 // ==========================================
 
-// Read a numerical CSV value safely.
-// Empty or invalid values should NOT become zero.
+// Convert values safely.
+// Missing values remain missing, NOT zero.
 function getNumericValue(value) {
 
     if (
@@ -154,170 +275,276 @@ function getNumericValue(value) {
 
     const number = Number(value);
 
-    return Number.isFinite(number) ? number : null;
+    if (!Number.isFinite(number)) {
+        return null;
+    }
+
+    return number;
 }
 
-// Display percentages with one decimal place.
+
+// Format data as percentage
 function formatPercentage(value) {
 
     const number = getNumericValue(value);
 
-    if (number === null) {
+    if (
+        number === null ||
+        number < 0 ||
+        number > 100
+    ) {
         return "No data";
     }
 
     return number.toFixed(1) + "%";
 }
 
-// Look up country by ISO3 code.
-function findCountry(iso3) {
 
-    return menstrualData.find(
-        country => country.iso3 === iso3
-    );
+// Get records for the currently selected year
+function getYearData() {
+
+    return menstrualData.filter(row => {
+
+        return row.year === selectedYear;
+    });
 }
 
+
+// Find a country in the selected year
+function findCountry(iso3) {
+
+    return getYearData().find(row => {
+
+        return row.iso3 === iso3;
+    });
+}
+
+
 // ==========================================
-// 5. SELECT A COUNTRY
+// 8. SELECT A COUNTRY
 // ==========================================
 
 function selectCountry(iso3) {
 
     selectedCountry = iso3;
 
-    const countrySelect =
-        document.getElementById("country-select");
+    document.getElementById("country-select")
+        .value = iso3;
 
-    countrySelect.value = iso3;
+    updateSelectedCountry();
+}
 
-    const country = findCountry(iso3);
+
+// ==========================================
+// 9. UPDATE SELECTED COUNTRY
+// ==========================================
+
+function updateSelectedCountry() {
+
+    if (!selectedCountry) {
+
+        clearCountryStats();
+        return;
+    }
+
+    const country = findCountry(selectedCountry);
 
     if (!country) {
-        clearCountryStats();
+
+        showMissingCountryData();
         return;
     }
 
     updateCountryStats(country);
 }
 
+
 // ==========================================
-// 6. UPDATE COUNTRY STATISTICS
+// 10. UPDATE COUNTRY STATISTICS
 // ==========================================
 
 function updateCountryStats(country) {
 
-    document.getElementById("selected-country-name")
-        .textContent = country.country;
+    document.getElementById(
+        "selected-country-name"
+    ).textContent = country.country;
 
-    document.getElementById("data-year")
-        .textContent = `JMP estimate year: ${country.year}`;
+    document.getElementById(
+        "data-year"
+    ).textContent =
+        `JMP estimate year: ${selectedYear}`;
 
-    document.getElementById("materials-value")
-        .textContent = formatPercentage(
-            country.materials_total
-        );
+    // Menstrual material use
+    document.getElementById(
+        "materials-value"
+    ).textContent = formatPercentage(
+        country.materials_total
+    );
 
-    document.getElementById("private-value")
-        .textContent = formatPercentage(
-            country.private_total
-        );
+    // Access to private spaces
+    document.getElementById(
+        "private-value"
+    ).textContent = formatPercentage(
+        country.private_total
+    );
 
-    document.getElementById("participation-value")
-        .textContent = formatPercentage(
-            country.participation_total
-        );
+    // Participation in daily activities
+    document.getElementById(
+        "participation-value"
+    ).textContent = formatPercentage(
+        country.participation_total
+    );
 }
 
-// Clear statistics when no country is selected.
-function clearCountryStats() {
-
-    document.getElementById("selected-country-name")
-        .textContent = "Select a country to explore its data";
-
-    document.getElementById("data-year")
-        .textContent = "";
-
-    document.getElementById("materials-value")
-        .textContent = "--";
-
-    document.getElementById("private-value")
-        .textContent = "--";
-
-    document.getElementById("participation-value")
-        .textContent = "--";
-}
 
 // ==========================================
-// 7. CREATE INTERACTIVE WORLD MAP
+// 11. CLEAR COUNTRY STATISTICS
+// ==========================================
+
+function clearCountryStats() {
+
+    document.getElementById(
+        "selected-country-name"
+    ).textContent =
+        "Select a country to explore its data";
+
+    document.getElementById(
+        "data-year"
+    ).textContent =
+        selectedYear !== null
+            ? `Selected year: ${selectedYear}`
+            : "";
+
+    document.getElementById(
+        "materials-value"
+    ).textContent = "--";
+
+    document.getElementById(
+        "private-value"
+    ).textContent = "--";
+
+    document.getElementById(
+        "participation-value"
+    ).textContent = "--";
+}
+
+
+// ==========================================
+// 12. HANDLE MISSING COUNTRY DATA
+// ==========================================
+
+function showMissingCountryData() {
+
+    const countrySelect =
+        document.getElementById("country-select");
+
+    const countryName =
+        countrySelect.selectedOptions[0]?.textContent
+        || "Selected country";
+
+    document.getElementById(
+        "selected-country-name"
+    ).textContent = countryName;
+
+    document.getElementById(
+        "data-year"
+    ).textContent =
+        `No estimate available for ${selectedYear}`;
+
+    [
+        "materials-value",
+        "private-value",
+        "participation-value"
+    ].forEach(id => {
+
+        document.getElementById(id)
+            .textContent = "No data";
+    });
+}
+
+
+// ==========================================
+// 13. INTERACTIVE WORLD MAP
 // ==========================================
 
 function updateMap() {
 
     const indicator =
-        document.getElementById("indicator-select").value;
+        document.getElementById(
+            "indicator-select"
+        ).value;
 
-    const config = indicators[indicator];
+    const indicatorConfig =
+        indicators[indicator];
 
-    if (!config) {
-        console.error("Unknown indicator:", indicator);
+    if (
+        !indicatorConfig ||
+        selectedYear === null
+    ) {
         return;
     }
 
-    // Only map countries that have a valid value.
-    const validCountries = menstrualData.filter(country => {
+    // Step 1: Filter to selected year
+    const yearData = getYearData();
 
-        const value = getNumericValue(country[indicator]);
+    // Step 2: Keep only valid indicator values
+    const validCountries = yearData.filter(row => {
 
-        return value !== null &&
-               value >= 0 &&
-               value <= 100;
+        const value =
+            getNumericValue(row[indicator]);
+
+        return (
+            value !== null &&
+            value >= 0 &&
+            value <= 100
+        );
     });
 
-    const locations =
-        validCountries.map(country => country.iso3);
+    // Step 3: Update reporting labels
+    updateMapLabels(
+        indicatorConfig.label,
+        yearData.length,
+        validCountries.length
+    );
 
-    const values =
-        validCountries.map(country =>
-            getNumericValue(country[indicator])
-        );
-
-    const names =
-        validCountries.map(country => country.country);
-
-    const years =
-        validCountries.map(country => country.year);
-
-    // Plotly choropleth data
+    // Step 4: Prepare Plotly data
     const mapData = [{
+
         type: "choropleth",
 
         locationmode: "ISO-3",
 
-        locations: locations,
-        z: values,
+        locations: validCountries.map(
+            row => row.iso3
+        ),
 
-        text: names,
+        z: validCountries.map(
+            row => getNumericValue(row[indicator])
+        ),
 
-        customdata: years,
+        text: validCountries.map(
+            row => row.country
+        ),
 
         zmin: 0,
         zmax: 100,
 
         colorscale: [
-            [0.0, "#f6e4ef"],
+            [0.00, "#f6e4ef"],
             [0.25, "#e7b6d0"],
-            [0.5, "#cb84af"],
+            [0.50, "#cb84af"],
             [0.75, "#a65889"],
-            [1.0, "#6e305c"]
+            [1.00, "#6e305c"]
         ],
 
         colorbar: {
             title: {
                 text: "%"
             },
+
+            ticksuffix: "%",
             thickness: 15,
-            len: 0.75,
-            ticksuffix: "%"
+            len: 0.75
         },
 
         marker: {
@@ -329,32 +556,38 @@ function updateMap() {
 
         hovertemplate:
             "<b>%{text}</b><br>" +
-            config.label + ": %{z:.1f}%<br>" +
-            "Estimate year: %{customdata}" +
+            indicatorConfig.label +
+            ": %{z:.1f}%<br>" +
+            "JMP estimate year: " +
+            selectedYear +
             "<extra></extra>"
     }];
 
-    // Map layout
+
+    // Step 5: Map layout
     const layout = {
 
         title: {
-            text: config.label,
+            text:
+                `${indicatorConfig.label} — ${selectedYear}`,
+
             font: {
                 size: 18,
                 color: "#653052"
             },
+
             x: 0.5
         },
 
         geo: {
             scope: "world",
+
             projection: {
                 type: "natural earth"
             },
 
             showframe: false,
             showcoastlines: true,
-
             coastlinecolor: "#e5dce5",
 
             showcountries: true,
@@ -374,18 +607,23 @@ function updateMap() {
             l: 10,
             r: 10,
             t: 65,
-            b: 10
+            b: 25
         },
 
         height: 500
     };
 
+
+    // Step 6: Plotly configuration
     const plotConfig = {
+
         responsive: true,
         displaylogo: false,
         displayModeBar: true
     };
 
+
+    // Step 7: Render map
     Plotly.react(
         "world-map",
         mapData,
@@ -396,22 +634,70 @@ function updateMap() {
         const mapElement =
             document.getElementById("world-map");
 
-        // Replace existing click handler to avoid duplicates.
-        mapElement.removeAllListeners("plotly_click");
+        // Prevent duplicate click listeners
+        mapElement.removeAllListeners(
+            "plotly_click"
+        );
 
-        mapElement.on("plotly_click", event => {
+        // Handle clicks on countries
+        mapElement.on(
+            "plotly_click",
+            event => {
 
-            const point = event.points[0];
+                const point = event.points[0];
 
-            if (point && point.location) {
-                selectCountry(point.location);
+                if (
+                    point &&
+                    point.location
+                ) {
+                    selectCountry(
+                        point.location
+                    );
+                }
             }
-        });
+        );
+
+    }).catch(error => {
+
+        console.error(
+            "Map rendering error:",
+            error
+        );
+
+        showError(
+            "Unable to render the world map."
+        );
     });
 }
 
+
 // ==========================================
-// 8. ERROR HANDLING
+// 14. UPDATE YEAR AND COVERAGE LABELS
+// ==========================================
+
+function updateMapLabels(
+    indicatorLabel,
+    totalCountries,
+    validCountries
+) {
+
+    document.getElementById(
+        "map-year-label"
+    ).textContent =
+        `Displaying JMP estimates for ${selectedYear}`;
+
+    document.getElementById(
+        "map-coverage"
+    ).textContent =
+        `${validCountries} of ${totalCountries} ` +
+        `countries/territories with records ` +
+        `for ${selectedYear} have available ` +
+        `${indicatorLabel.toLowerCase()} data.`;
+}
+
+
+// ==========================================
+// 15. ERROR HANDLING
 // ==========================================
 
 function showError(message) {
@@ -421,9 +707,11 @@ function showError(message) {
 
     mapElement.textContent = "";
 
-    const errorMessage = document.createElement("p");
+    const errorMessage =
+        document.createElement("p");
 
     errorMessage.textContent = message;
+
     errorMessage.style.color = "#a12350";
     errorMessage.style.padding = "30px";
     errorMessage.style.textAlign = "center";
