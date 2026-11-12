@@ -8,31 +8,73 @@
 // 1. CONFIGURATION
 // ==========================================
 
-// All-years UNICEF dataset
+// Existing project dataset
 const DATA_FILE =
     "data/beyond_the_period_unicef_menstrual_health_all_years.csv";
+const WORLD_BANK_DATA_FILE =
+    "data/world_bank_menstrual_material_rates.csv";
+const PERIOD_PAD_DATA_FILE =
+    "data/period_pad_prices_by_country_2024.csv";
+const WORLD_BANK_VALUE_COLUMN =
+    "Women and girls who use menstrual materials " +
+    "(% of women and girls ages 15-49 who had a menstrual period within the last year)";
 
 // Dashboard state
 let menstrualData = [];
+let worldBankData = [];
+let periodPadData = [];
 let selectedCountry = "";
 let selectedYear = null;
 
 // Supported indicators
 const indicators = {
     materials_total: {
-        label: "Menstrual Material Use",
+        label: "Menstrual Material Use (existing project dataset)",
+        dataSource: "project",
+        field: "materials_total",
+        maxValue: 100,
         description:
             "Percentage reporting menstrual material use"
     },
 
+    world_bank_materials: {
+        label: "Menstrual Material Use (World Bank)",
+        dataSource: "worldBank",
+        field: "value",
+        maxValue: 100,
+        description:
+            "Women and girls ages 15–49 who had a menstrual period " +
+            "in the last year and use menstrual materials"
+    },
+
+    period_pad_costs: {
+        label: "Cheapest Period Pad Price and Lifetime Cost (2024)",
+        dataSource: "periodPads",
+        field: "pricePerPad",
+        additionalFields: ["lifetimeCost"],
+        maxValue: 0.25,
+        maxValues: {
+            lifetimeCost: 3000
+        },
+        currency: true,
+        description:
+            "Price of the cheapest pad and estimated lifetime pad cost"
+    },
+
     private_total: {
         label: "Access to a Private Place",
+        dataSource: "project",
+        field: "private_total",
+        maxValue: 100,
         description:
             "Percentage with a private place to wash and change"
     },
 
     participation_total: {
         label: "Participation in Daily Activities",
+        dataSource: "project",
+        field: "participation_total",
+        maxValue: 100,
         description:
             "Percentage reporting participation during menstruation"
     }
@@ -49,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 // ==========================================
-// 3. LOAD UNICEF DATA
+// 3. LOAD DATA SOURCES
 // ==========================================
 
 function loadData() {
@@ -100,7 +142,7 @@ function loadData() {
             if (menstrualData.length === 0) {
 
                 showError(
-                    "No valid country data was found."
+                    "No valid records were found in the existing project dataset."
                 );
 
                 return;
@@ -109,26 +151,173 @@ function loadData() {
             console.log(
                 "Successfully loaded",
                 menstrualData.length,
-                "UNICEF records"
+                "existing project dataset records"
             );
 
-            // Initialize filters
-            populateYearDropdown();
-            populateCountryDropdown();
+            loadWorldBankData();
+        },
 
-            // Initialize interactions
+        error: function(error) {
+
+            console.error(
+                "Error loading the existing project dataset:",
+                error
+            );
+
+            showError(
+                "Unable to load the existing project dataset. " +
+                "Check the CSV filename and GitHub path."
+            );
+        }
+    });
+}
+
+function loadWorldBankData() {
+
+    Papa.parse(WORLD_BANK_DATA_FILE, {
+
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+
+        complete: function(results) {
+
+            if (results.errors.length > 0) {
+                console.warn(
+                    "World Bank CSV parsing warnings:",
+                    results.errors
+                );
+            }
+
+            worldBankData = results.data
+                .filter(row => {
+
+                    return (
+                        row.Economy &&
+                        row["Economy Code"] &&
+                        String(row.Year).trim() !== "" &&
+                        Number.isFinite(Number(row.Year))
+                    );
+
+                })
+                .map(row => {
+
+                    return {
+                        country: row.Economy.trim(),
+                        iso3: row["Economy Code"]
+                            .trim()
+                            .toUpperCase(),
+                        year: Number(row.Year),
+                        value: row[WORLD_BANK_VALUE_COLUMN]
+                    };
+
+                });
+
+            if (worldBankData.length === 0) {
+
+                showError(
+                    "No valid country records were found in the World Bank dataset."
+                );
+
+                return;
+            }
+
+            console.log(
+                "Successfully loaded",
+                worldBankData.length,
+                "World Bank records"
+            );
+
+            loadPeriodPadData();
+        },
+
+        error: function(error) {
+
+            console.error(
+                "Error loading the World Bank CSV:",
+                error
+            );
+
+            showError(
+                "Unable to load the World Bank dataset. " +
+                "Check the CSV filename and GitHub path."
+            );
+        }
+    });
+}
+
+function loadPeriodPadData() {
+
+    Papa.parse(PERIOD_PAD_DATA_FILE, {
+
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+
+        complete: function(results) {
+
+            if (results.errors.length > 0) {
+                console.warn(
+                    "Period pad CSV parsing warnings:",
+                    results.errors
+                );
+            }
+
+            periodPadData = results.data
+                .filter(row => {
+
+                    return (
+                        row.Economy &&
+                        row["Economy Code"] &&
+                        String(row.Year).trim() !== "" &&
+                        Number.isFinite(Number(row.Year))
+                    );
+
+                })
+                .map(row => {
+
+                    return {
+                        country: row.Economy.trim(),
+                        iso3: row["Economy Code"]
+                            .trim()
+                            .toUpperCase(),
+                        year: Number(row.Year),
+                        pricePerPad: row["Price per cheapest pad (USD)"],
+                        lifetimeCost:
+                            row["Lifetime cost of having a period (USD)"]
+                    };
+
+                });
+
+            if (periodPadData.length === 0) {
+
+                showError(
+                    "No valid country records were found in the period pad dataset."
+                );
+
+                return;
+            }
+
+            console.log(
+                "Successfully loaded",
+                periodPadData.length,
+                "period pad price records"
+            );
+
+            populateCountryDropdown();
+            populateYearDropdown();
             initializeDashboard();
         },
 
         error: function(error) {
 
             console.error(
-                "Error loading UNICEF CSV:",
+                "Error loading the period pad CSV:",
                 error
             );
 
             showError(
-                "Unable to load the dataset. " +
+                "Unable to load the period pad dataset. " +
                 "Check the CSV filename and GitHub path."
             );
         }
@@ -144,15 +333,45 @@ function populateYearDropdown() {
 
     const yearSelect =
         document.getElementById("year-select");
+    const indicator =
+        document.getElementById("indicator-select").value;
+    const indicatorConfig =
+        indicators[indicator];
 
-    // Get unique available years
+    if (!indicatorConfig) {
+        return;
+    }
+
+    const sourceData = getIndicatorSourceData(indicatorConfig);
+
+    // Include only years with a value for the selected indicator.
     const years = [
         ...new Set(
-            menstrualData.map(row => row.year)
+            sourceData
+                .filter(row => {
+
+                    return isValidIndicatorRow(
+                        row,
+                        indicatorConfig
+                    );
+                })
+                .map(row => row.year)
         )
     ].sort((a, b) => b - a);
 
     yearSelect.innerHTML = "";
+
+    if (years.length === 0) {
+
+        const option =
+            document.createElement("option");
+
+        option.value = "";
+        option.textContent = "No data years available";
+        yearSelect.appendChild(option);
+        selectedYear = null;
+        return;
+    }
 
     // Populate the dropdown
     years.forEach(year => {
@@ -166,8 +385,10 @@ function populateYearDropdown() {
         yearSelect.appendChild(option);
     });
 
-    // Default to latest year
-    selectedYear = years[0];
+    // Keep the selected year if available; otherwise use the latest year.
+    selectedYear = years.includes(selectedYear)
+        ? selectedYear
+        : years[0];
 
     yearSelect.value = String(selectedYear);
 
@@ -199,12 +420,17 @@ function populateCountryDropdown() {
     // Use ISO3 codes to identify unique countries
     const countryMap = new Map();
 
-    menstrualData.forEach(row => {
+    [menstrualData, worldBankData, periodPadData].forEach(sourceData => {
 
-        countryMap.set(
-            row.iso3,
-            row.country
-        );
+        sourceData.forEach(row => {
+
+            if (!countryMap.has(row.iso3)) {
+                countryMap.set(
+                    row.iso3,
+                    row.country
+                );
+            }
+        });
     });
 
     // Sort countries alphabetically
@@ -248,7 +474,9 @@ function initializeDashboard() {
 
     indicatorSelect.addEventListener("change", () => {
 
+        populateYearDropdown();
         updateMap();
+        updateSelectedCountry();
     });
 
     clearCountryStats();
@@ -282,6 +510,40 @@ function getNumericValue(value) {
     return number;
 }
 
+function getIndicatorSourceData(indicatorConfig) {
+
+    switch (indicatorConfig.dataSource) {
+        case "worldBank":
+            return worldBankData;
+        case "periodPads":
+            return periodPadData;
+        default:
+            return menstrualData;
+    }
+}
+
+function isValidIndicatorRow(row, indicatorConfig) {
+
+    const fields = [
+        indicatorConfig.field,
+        ...(indicatorConfig.additionalFields || [])
+    ];
+
+    return fields.every(field => {
+
+        const value = getNumericValue(row[field]);
+
+        return (
+            value !== null &&
+            value >= 0 &&
+            value <= (
+                indicatorConfig.maxValues?.[field] ??
+                indicatorConfig.maxValue
+            )
+        );
+    });
+}
+
 
 // Format data as percentage
 function formatPercentage(value) {
@@ -299,11 +561,38 @@ function formatPercentage(value) {
     return number.toFixed(1) + "%";
 }
 
+function formatCurrency(value, decimals) {
+
+    const number = getNumericValue(value);
+
+    if (number === null || number < 0) {
+        return "No data";
+    }
+
+    return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    }).format(number);
+}
+
 
 // Get records for the currently selected year
 function getYearData() {
 
-    return menstrualData.filter(row => {
+    const indicator =
+        document.getElementById("indicator-select").value;
+    const indicatorConfig =
+        indicators[indicator];
+
+    if (!indicatorConfig) {
+        return [];
+    }
+
+    const sourceData = getIndicatorSourceData(indicatorConfig);
+
+    return sourceData.filter(row => {
 
         return row.year === selectedYear;
     });
@@ -311,11 +600,14 @@ function getYearData() {
 
 
 // Find a country in the selected year
-function findCountry(iso3) {
+function findCountry(iso3, sourceData = getYearData()) {
 
-    return getYearData().find(row => {
+    return sourceData.find(row => {
 
-        return row.iso3 === iso3;
+        return (
+            row.iso3 === iso3 &&
+            row.year === selectedYear
+        );
     });
 }
 
@@ -347,15 +639,24 @@ function updateSelectedCountry() {
         return;
     }
 
-    const country = findCountry(selectedCountry);
+    const projectCountry =
+        findCountry(selectedCountry, menstrualData);
+    const worldBankCountry =
+        findCountry(selectedCountry, worldBankData);
+    const periodPadCountry =
+        findCountry(selectedCountry, periodPadData);
 
-    if (!country) {
+    if (!projectCountry && !worldBankCountry && !periodPadCountry) {
 
         showMissingCountryData();
         return;
     }
 
-    updateCountryStats(country);
+    updateCountryStats(
+        projectCountry,
+        worldBankCountry,
+        periodPadCountry
+    );
 }
 
 
@@ -363,36 +664,63 @@ function updateSelectedCountry() {
 // 10. UPDATE COUNTRY STATISTICS
 // ==========================================
 
-function updateCountryStats(country) {
+function updateCountryStats(
+    projectCountry,
+    worldBankCountry,
+    periodPadCountry
+) {
 
     document.getElementById(
         "selected-country-name"
-    ).textContent = country.country;
+    ).textContent =
+        projectCountry?.country ||
+        worldBankCountry?.country ||
+        periodPadCountry?.country ||
+        "Selected country";
 
     document.getElementById(
         "data-year"
     ).textContent =
-        `JMP estimate year: ${selectedYear}`;
+        `Selected data year: ${selectedYear}`;
 
-    // Menstrual material use
+    // Existing project dataset indicators
     document.getElementById(
         "materials-value"
     ).textContent = formatPercentage(
-        country.materials_total
+        projectCountry?.materials_total
     );
 
-    // Access to private spaces
     document.getElementById(
         "private-value"
     ).textContent = formatPercentage(
-        country.private_total
+        projectCountry?.private_total
     );
 
-    // Participation in daily activities
     document.getElementById(
         "participation-value"
     ).textContent = formatPercentage(
-        country.participation_total
+        projectCountry?.participation_total
+    );
+
+    // Separately sourced World Bank indicator
+    document.getElementById(
+        "world-bank-materials-value"
+    ).textContent = formatPercentage(
+        worldBankCountry?.value
+    );
+
+    document.getElementById(
+        "pad-price-value"
+    ).textContent = formatCurrency(
+        periodPadCountry?.pricePerPad,
+        3
+    );
+
+    document.getElementById(
+        "pad-lifetime-cost-value"
+    ).textContent = formatCurrency(
+        periodPadCountry?.lifetimeCost,
+        0
     );
 }
 
@@ -426,6 +754,18 @@ function clearCountryStats() {
     document.getElementById(
         "participation-value"
     ).textContent = "--";
+
+    document.getElementById(
+        "world-bank-materials-value"
+    ).textContent = "--";
+
+    document.getElementById(
+        "pad-price-value"
+    ).textContent = "--";
+
+    document.getElementById(
+        "pad-lifetime-cost-value"
+    ).textContent = "--";
 }
 
 
@@ -454,7 +794,10 @@ function showMissingCountryData() {
     [
         "materials-value",
         "private-value",
-        "participation-value"
+        "participation-value",
+        "world-bank-materials-value",
+        "pad-price-value",
+        "pad-lifetime-cost-value"
     ].forEach(id => {
 
         document.getElementById(id)
@@ -488,17 +831,9 @@ function updateMap() {
     const yearData = getYearData();
 
     // Step 2: Keep only valid indicator values
-    const validCountries = yearData.filter(row => {
-
-        const value =
-            getNumericValue(row[indicator]);
-
-        return (
-            value !== null &&
-            value >= 0 &&
-            value <= 100
-        );
-    });
+    const validCountries = yearData.filter(row =>
+        isValidIndicatorRow(row, indicatorConfig)
+    );
 
     // Step 3: Update reporting labels
     updateMapLabels(
@@ -519,7 +854,13 @@ function updateMap() {
         ),
 
         z: validCountries.map(
-            row => getNumericValue(row[indicator])
+            row => getNumericValue(row[indicatorConfig.field])
+        ),
+
+        customdata: validCountries.map(row =>
+            indicatorConfig.dataSource === "periodPads"
+                ? getNumericValue(row.lifetimeCost)
+                : null
         ),
 
         text: validCountries.map(
@@ -527,7 +868,7 @@ function updateMap() {
         ),
 
         zmin: 0,
-        zmax: 100,
+        zmax: indicatorConfig.maxValue,
 
         colorscale: [
             [0.00, "#f6e4ef"],
@@ -539,10 +880,11 @@ function updateMap() {
 
         colorbar: {
             title: {
-                text: "%"
+                text: indicatorConfig.currency ? "USD" : "%"
             },
 
-            ticksuffix: "%",
+            tickprefix: indicatorConfig.currency ? "$" : "",
+            ticksuffix: indicatorConfig.currency ? "" : "%",
             thickness: 15,
             len: 0.75
         },
@@ -556,9 +898,12 @@ function updateMap() {
 
         hovertemplate:
             "<b>%{text}</b><br>" +
-            indicatorConfig.label +
-            ": %{z:.1f}%<br>" +
-            "JMP estimate year: " +
+            (indicatorConfig.currency
+                ? "Cheapest pad: $%{z:.3f}<br>" +
+                    "Estimated lifetime cost: $%{customdata:,.0f}<br>"
+                : indicatorConfig.label +
+                    ": %{z:.1f}%<br>") +
+            "Data year: " +
             selectedYear +
             "<extra></extra>"
     }];
@@ -680,11 +1025,20 @@ function updateMapLabels(
     totalCountries,
     validCountries
 ) {
+    const indicator =
+        document.getElementById("indicator-select").value;
+    const indicatorConfig =
+        indicators[indicator];
+    const sourceLabel = {
+        worldBank: "World Bank",
+        periodPads: "Healthnews 2024 report (IBMNC)",
+        project: "Existing project dataset"
+    }[indicatorConfig.dataSource];
 
     document.getElementById(
         "map-year-label"
     ).textContent =
-        `Displaying JMP estimates for ${selectedYear}`;
+        `Displaying ${selectedYear} data from ${sourceLabel}`;
 
     document.getElementById(
         "map-coverage"

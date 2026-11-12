@@ -100,7 +100,15 @@
                 <select id="indicator-select">
 
                     <option value="materials_total">
-                        Menstrual Material Use
+                        Menstrual Material Use — Existing project dataset
+                    </option>
+
+                    <option value="world_bank_materials">
+                        Menstrual Material Use — World Bank
+                    </option>
+
+                    <option value="period_pad_costs">
+                        Period Pad Price and Lifetime Cost — 2024
                     </option>
 
                     <option value="private_total">
@@ -165,8 +173,11 @@
             <p class="map-note">
                 Countries without available data for the
                 selected indicator and year appear gray.
-                All displayed values use the selected
-                JMP estimate year.
+                The selected year and source are shown above
+                the map. For the 2024 period-pad indicator,
+                map colors show cheapest-pad price; hover
+                over a country to see its estimated lifetime
+                cost as well.
             </p>
 
         </section>
@@ -189,7 +200,7 @@
 
                 <div class="stat-card">
 
-                    <h4>Menstrual Material Use</h4>
+                    <h4>Menstrual Material Use — Existing project dataset</h4>
 
                     <p class="stat-value"
                        id="materials-value">
@@ -198,7 +209,66 @@
 
                     <p class="stat-description">
                         Percentage reporting use of
-                        menstrual materials.
+                        menstrual materials. The original
+                        source attribution for this project
+                        dataset is being verified.
+                    </p>
+
+                </div>
+
+                <!-- WORLD BANK MATERIAL USE -->
+
+                <div class="stat-card">
+
+                    <h4>Menstrual Material Use — World Bank</h4>
+
+                    <p class="stat-value"
+                       id="world-bank-materials-value">
+                        --
+                    </p>
+
+                    <p class="stat-description">
+                        Percentage of women and girls ages
+                        15–49 who had a menstrual period in
+                        the last year and use menstrual
+                        materials. World Bank data; shown
+                        separately from the project dataset.
+                    </p>
+
+                </div>
+
+                <!-- PERIOD PAD PRICE AND LIFETIME COST -->
+
+                <div class="stat-card period-pad-card">
+
+                    <h4>Period Pad Price and Lifetime Cost — 2024</h4>
+
+                    <div class="period-pad-metrics">
+                        <div>
+                            <p class="stat-description">
+                                Cheapest pad price
+                            </p>
+                            <p class="stat-value"
+                               id="pad-price-value">
+                                --
+                            </p>
+                        </div>
+                        <div>
+                            <p class="stat-description">
+                                Estimated lifetime pad cost
+                            </p>
+                            <p class="stat-value"
+                               id="pad-lifetime-cost-value">
+                                --
+                            </p>
+                        </div>
+                    </div>
+
+                    <p class="stat-description">
+                        Lifetime cost is estimated by multiplying
+                        the cheapest pad price by 11,400 lifetime
+                        pad uses. This is a report estimate, not
+                        an individual cost prediction.
                     </p>
 
                 </div>
@@ -253,41 +323,68 @@
             <h3>About the Data</h3>
 
             <p>
-                This dashboard uses country-level menstrual
-                health indicators from the UNICEF/WHO
-                Joint Monitoring Programme (JMP).
+                The existing project indicators are loaded
+                from
+                <code>data/beyond_the_period_unicef_menstrual_health_all_years.csv</code>.
+                The file's upstream source and processing
+                have not yet been verified; its filename
+                alone does not establish UNICEF/WHO JMP
+                provenance.
+            </p>
+
+            <p>
+                The separate World Bank menstrual material
+                use indicator is loaded from
+                <code>data/world_bank_menstrual_material_rates.csv</code>.
+                See the
+                <a
+                    href="https://genderdata.worldbank.org/en/indicator/sg-mhg-umdp-zs"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    World Bank indicator page
+                </a>
+                for its published title and details.
+                Although the measures are similar, their
+                values are kept separate and may differ.
+            </p>
+
+            <p>
+                The period-pad price indicator uses the 2024
+                report,
+                <a
+                    href="https://www.ibmnc.org/global-report-the-cost-of-having-a-period-in-2024/"
+                    target="_blank"
+                    rel="noopener noreferrer">
+                    The Cost of Having a Period in 2024
+                </a>.
+                It compares the cheapest pad prices found in
+                30 countries, converted to U.S. dollars, and
+                estimates lifetime cost using 11,400 pad uses.
+                The report says prices were collected through
+                online searches of local retailers; they may
+                not represent current prices or everyone’s
+                costs. The map shows pad price, while country
+                details and map hovers also show estimated
+                lifetime cost.
             </p>
 
             <p>
                 The year selector allows users to explore
-                available estimates for a particular
-                calendar year. Countries without available
-                estimates for that year are not assigned
+                years with values for the selected
+                indicator. Countries without available
+                values for that year are not assigned
                 values from another year.
             </p>
 
             <p>
-                <strong>Important:</strong>
-                JMP estimate years do not necessarily
-                correspond to the years in which the
-                underlying surveys were conducted.
-                Data availability also varies across
-                countries and indicators.
+                Data availability varies across countries
+                and indicators. The selected source and
+                data year are identified on the map.
             </p>
 
             <p>
                 Missing data does not mean that access
                 is zero.
-            </p>
-
-            <p>
-                Source:
-                <a
-                    href="https://data.unicef.org/resources/jmp-report-2025/"
-                    target="_blank"
-                    rel="noopener noreferrer">
-                    UNICEF/WHO JMP 2025
-                </a>
             </p>
 
         </section>

@@ -259,7 +259,7 @@ a:hover {
 
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 20px;
 }
 
@@ -300,6 +300,20 @@ a:hover {
     font-size: 0.9rem;
     color: var(--text-muted);
     margin-bottom: 0;
+}
+
+.period-pad-card {
+    grid-column: span 2;
+}
+
+.period-pad-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.period-pad-metrics .stat-value {
+    font-size: 2rem;
 }
 
 
@@ -433,6 +447,15 @@ a:hover {
 
     .stat-card {
         padding: 22px;
+    }
+
+    .period-pad-card {
+        grid-column: span 1;
+    }
+
+    .period-pad-metrics {
+        grid-template-columns: 1fr;
+        gap: 0;
     }
 
     .stat-card h4 {
